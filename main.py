@@ -17,9 +17,8 @@ from src.schemas.user import (
     UserOut
 )
 
-from src.web import user
-
-
+from src.web import user, admin_user
+from src.utils.utils import hash_password
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +33,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(user.router)
+app.include_router(admin_user.router)
 
 
 
@@ -49,8 +49,6 @@ async def create_user(
     password: str = Form(...),
     color: str = Form(...),
     email: Optional[str] = Form(None),
-    status: str = Form("free"),
-    theme: str = Form("system"),
     avatar: UploadFile = File(None), # Для получения файла
     db: AsyncSession = Depends(get_db)
 ):
@@ -71,13 +69,10 @@ async def create_user(
         name=name,
         surname=surname,
 
-        passwordHash=hash_password(password),
+        password_hash=hash_password(password),
 
-        avatarUrl=avatar_url,
+        avatar_url=avatar_url,
         email=email,
-
-        status=status,
-        theme=theme,
 
         color=color,
     )

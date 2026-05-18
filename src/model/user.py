@@ -1,18 +1,16 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Integer, String
 from src.utils.db import Base
 import uuid
-
 from sqlalchemy import (
     String,
     Boolean,
     Integer,
     DateTime
 )
-
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime, timezone
 
-from datetime import datetime, UTC
-
+time = lambda: datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -27,9 +25,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255))
     surname: Mapped[str] = mapped_column(String(255))
 
-    passwordHash: Mapped[str] = mapped_column(String)
+    password_hash: Mapped[str] = mapped_column(String)
 
-    avatarUrl: Mapped[str | None] = mapped_column(
+    avatar_url: Mapped[str | None] = mapped_column(
         String,
         nullable=True
     )
@@ -38,11 +36,6 @@ class User(Base):
         String,
         unique=True,
         nullable=True
-    )
-
-    status: Mapped[str] = mapped_column(
-        String,
-        default='free'
     )
 
     theme: Mapped[str] = mapped_column(
@@ -62,15 +55,14 @@ class User(Base):
 
     color: Mapped[str] = mapped_column(String)
 
-    createAt: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow()
+    status: Mapped[str] = mapped_column(
+        String,
+        default='free'
     )
 
-    updatedAt: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow(),
-        onupdate=datetime.utcnow()
+    role: Mapped[str] = mapped_column(
+        String,
+        default='user'
     )
 
     active: Mapped[bool] = mapped_column(
@@ -78,7 +70,23 @@ class User(Base):
         default=True
     )
 
-    deactivatedAt: Mapped[datetime | None] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=time,
+        onupdate=time
+    )
+
+    create_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=time
+        )
+    
+    deactivated_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
+    lastsync_at: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True
     )

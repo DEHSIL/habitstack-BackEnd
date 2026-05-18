@@ -7,10 +7,12 @@ class UserCreate(BaseModel):
     surname: str
     password: str
 
-    avatarUrl: Optional[str] = None
+    avatar_url: Optional[str] = None
     email: Optional[EmailStr] = None
 
-    status: Literal['free', 'premium', 'admin'] = 'free'
+    status: Literal['free', 'premium'] = 'free'
+
+    role: Literal['user', 'admin'] = 'user'
 
     theme: Literal['light', 'dark', 'system'] = 'system'
 
@@ -24,11 +26,15 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     surname: Optional[str] = None
 
-    avatarUrl: Optional[str] = None
+    avatar_url: Optional[str] = None
     email: Optional[EmailStr] = None
 
     status: Optional[
-        Literal['free', 'premium', 'admin']
+        Literal['free', 'premium']
+    ] = None
+
+    role: Optional[
+        Literal['user', 'admin']
     ] = None
 
     theme: Optional[
@@ -49,10 +55,11 @@ class UserOut(BaseModel):
     name: str
     surname: str
 
-    avatarUrl: Optional[str]
+    avatar_url: Optional[str]
     email: Optional[str]
 
     status: str
+    role: str
     theme: str
 
     streak: int
@@ -60,11 +67,13 @@ class UserOut(BaseModel):
 
     color: str
 
-    createAt: datetime
-    updatedAt: datetime
+    create_at: datetime
+    updated_at: datetime
 
     active: bool
-    deactivatedAt: Optional[datetime]
+    deactivated_at: Optional[datetime]
+
+    lastsync_at: Optional[datetime]
 
     class Config:
         from_attributes = True
