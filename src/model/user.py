@@ -9,8 +9,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime, timezone
+from src.utils.utils import time_now
 
-time = lambda: datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -72,13 +72,13 @@ class User(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=time,
-        onupdate=time
+        default=time_now,
+        onupdate=time_now
     )
 
     create_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=time
+        default=time_now
         )
     
     deactivated_at: Mapped[datetime | None] = mapped_column(

@@ -5,7 +5,8 @@ from src.service.user import UserService
 from src.schemas.user import UserOut
 
 # Предположим, у вас есть зависимость для проверки роли админа
-from src.utils.auth import get_current_admin_user 
+from src.utils.auth import get_current_admin_user
+from src.utils.error import Missing 
 
 router = APIRouter(
     prefix="/admin/users", 
@@ -13,10 +14,26 @@ router = APIRouter(
 )
 
 @router.delete("/{user_id}", response_model=UserOut)
+@router.delete("/{user_id}/", response_model=UserOut)
 async def admin_delete_user(
     user_id: str, 
     db: AsyncSession = Depends(get_db),
-    current_admin = Depends(get_current_admin_user) # Защита: сюда пройдут ТОЛЬКО админы
+    current_admin = Depends(get_current_admin_user)
 ):
-    # Если зависимость выше сработала, значит это точно админ. Вызываем общий сервис.
-    return await UserService.delete_user(user_id, db)
+    try:
+        return await UserService.delete_user(user_id, db)
+    except Missing as ecx:
+        raise HTTPException(status_code=408, detail=ecx.msg)
+
+
+@router.patch("/{user_id}/deactivate", response_model=UserOut)
+@router.patch("/{user_id}/deactivate/", response_model=UserOut)
+async def admin_deactivate_user(
+    user_id: str, 
+    db: AsyncSession = Depends(get_db),
+    current_admin = Depends(get_current_admin_user)
+):
+    try:
+        return await UserService.deactivate_user(user_id, db)
+    except Missing as ecx:
+        raise HTTPException(status_code=408, detail=ecx.msg)

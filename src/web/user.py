@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from src.utils.error import Missing, Duplicate
 from src.service.user import UserService
 from src.schemas.user import UserOut, UserCreate, UserUpdate
 from settings import settings
 from src.utils.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils.utils import get_user_payload
 
 router = APIRouter(
     prefix='/user',
@@ -27,9 +30,14 @@ async def get_one(id: str, db: AsyncSession = Depends(get_db)) -> UserOut:
 
 @router.post('', status_code=201, response_model=UserOut)
 @router.post('/', status_code=201, response_model=UserOut)
-async def create_user(data: UserCreate, db: AsyncSession = Depends(get_db)) -> UserOut:
+async def create_user(
+    payload: UserCreate = Depends(get_user_payload), # Вот тут происходит магия
+    avatar: Optional[UploadFile] = File(None),       # Файл идет отдельным аргументом
+    db: AsyncSession = Depends(get_db)
+) -> UserOut:
     try:
-        return await UserService.create_user(data, db)
+        return await UserService.create_user(
+            payload, avatar, db)
     except Duplicate as exc:
         raise HTTPException(status_code=409, detail=exc.msg)
     

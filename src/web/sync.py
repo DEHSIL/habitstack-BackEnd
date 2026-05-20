@@ -18,6 +18,7 @@ router = APIRouter(prefix="/sync", tags=["Sync"])
 
 # --- 1. UPSTREAM: Клиент отправляет свои оффлайн-изменения на сервер ---
 @router.post("/upstream")
+@router.post("/upstream/")
 def sync_upstream(payload: UpstreamSyncPayload, db: Session = Depends(get_db)):
     if not payload.changes:
         return {"status": "ok", "processed": 0}
@@ -46,6 +47,7 @@ def sync_upstream(payload: UpstreamSyncPayload, db: Session = Depends(get_db)):
 
 # --- 2. DOWNSTREAM: Клиент запрашивает обновления, появившиеся с момента последней синхронизации ---
 @router.get("/downstream", response_model=DownstreamSyncResponse)
+@router.get("/downstream/", response_model=DownstreamSyncResponse)
 def sync_downstream(
     # Клиент передает ISO-строку времени, например: ?since=2026-05-18T10:00:00
     since: Annotated[datetime, Query(description="Дата последней успешной синхронизации клиента")],

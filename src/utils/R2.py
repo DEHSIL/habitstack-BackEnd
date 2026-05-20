@@ -10,7 +10,7 @@ class R2Storage:
         endpoint = settings.R2_ENDPOINT_URL
         access_key = settings.R2_ACCESS_KEY_ID
         secret_key = settings.R2_SECRET_ACCESS_KEY
-        bucket = None
+        bucket = settings.R2_BUCKET_NAME
 
         if not all([endpoint, access_key, secret_key, bucket]):
             raise ValueError(f"Ошибка: Не все ключи R2 найдены! Endpoint: {endpoint} {__name__}")

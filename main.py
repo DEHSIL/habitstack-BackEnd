@@ -16,9 +16,10 @@ from src.schemas.user import (
     UserUpdate,
     UserOut
 )
-
+ 
 from src.web import user, admin_user
 from src.utils.utils import hash_password
+from src.utils.error import Missing
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,64 +40,64 @@ app.include_router(admin_user.router)
 
 
 # CREATE USER
-@app.post(
-    "/users",
-    response_model=UserOut
-)
-async def create_user(
-    name: str = Form(...),
-    surname: str = Form(...),
-    password: str = Form(...),
-    color: str = Form(...),
-    email: Optional[str] = Form(None),
-    avatar: UploadFile = File(None), # Для получения файла
-    db: AsyncSession = Depends(get_db)
-):
-    avatar_url = None
+# @app.post(
+#     "/users",
+#     response_model=UserOut
+# )
+# async def create_user(
+#     name: str = Form(...),
+#     surname: str = Form(...),
+#     password: str = Form(...),
+#     color: str = Form(...),
+#     email: Optional[str] = Form(None),
+#     avatar: UploadFile = File(None), # Для получения файла
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     avatar_url = None
 
-    if avatar:
-        # Формируем уникальный путь: avatars/timestamp_filename
-        from datetime import datetime
-        file_path = f"avatars/{datetime.now().timestamp()}_{avatar.filename}"
+#     if avatar:
+#         # Формируем уникальный путь: avatars/timestamp_filename
+#         from datetime import datetime
+#         file_path = f"avatars/{datetime.now().timestamp()}_{avatar.filename}"
         
-        # Загружаем в Cloudflare R2
-        avatar_url = await storage.upload_file(avatar, file_path)
+#         # Загружаем в Cloudflare R2
+#         avatar_url = await storage.upload_file(avatar, file_path)
 
-    # Теперь создаем пользователя в БД
+#     # Теперь создаем пользователя в БД
 
-    # print(data)
-    user = User(
-        name=name,
-        surname=surname,
+#     # print(data)
+#     user = User(
+#         name=name,
+#         surname=surname,
 
-        password_hash=hash_password(password),
+#         password_hash=hash_password(password),
 
-        avatar_url=avatar_url,
-        email=email,
+#         avatar_url=avatar_url,
+#         email=email,
 
-        color=color,
-    )
+#         color=color,
+#     )
     
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+#     db.add(user)
+#     await db.commit()
+#     await db.refresh(user)
 
-    return user
+#     return user
 
 
 # GET ALL USERS
-@app.get(
-    "/users",
-    response_model=list[UserOut]
-)
-async def get_users(
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(User)
-    )
+# @app.get(
+#     "/users",
+#     response_model=list[UserOut]
+# )
+# async def get_users(
+#     db: AsyncSession = Depends(get_db)
+# ):
+#     result = await db.execute(
+#         select(User)
+#     )
 
-    return result.scalars().all()
+#     return result.scalars().all()
 
 
 # GET USER BY ID
@@ -117,7 +118,7 @@ async def get_user(
     user = result.scalar_one_or_none()
 
     if not user:
-        raise HTTPException(
+        raise Missing(
             status_code=404,
             detail="User not found"
         )
