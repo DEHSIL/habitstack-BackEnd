@@ -19,7 +19,10 @@ router = APIRouter(prefix="/sync", tags=["Sync"])
 # --- 1. UPSTREAM: Клиент отправляет свои оффлайн-изменения на сервер ---
 @router.post("/upstream")
 @router.post("/upstream/")
-def sync_upstream(payload: UpstreamSyncPayload, db: Session = Depends(get_db)):
+def sync_upstream(
+    payload: UpstreamSyncPayload, 
+    db: Session = Depends(get_db)
+):
     if not payload.changes:
         return {"status": "ok", "processed": 0}
 

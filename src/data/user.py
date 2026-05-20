@@ -1,15 +1,19 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from src.schemas.user import UserCreate, UserUpdate
 from src.model.user import User
 from src.utils.utils import time_now
 
 class UserData:
     @staticmethod
-    async def get_one_by_id(id: str, db: AsyncSession):
+    async def get_one_by_id(
+        user_id: str, 
+        db: AsyncSession
+    ):
         result = await db.execute(
             select(User).where(
-                User.id == id
+                User.id == user_id
             )
         )
         user = result.scalar_one_or_none()
@@ -22,7 +26,10 @@ class UserData:
     
 
     @staticmethod
-    async def get_by_name(name: str, db: AsyncSession):
+    async def get_by_name(
+        name: str, 
+        db: AsyncSession
+    ):
         result = await db.execute(
             select(User).where(
                 User.name == name
@@ -38,7 +45,9 @@ class UserData:
     
 
     @staticmethod
-    async def get_all(db: AsyncSession):
+    async def get_all(
+        db: AsyncSession
+    ):
         result = await db.execute(
             select(User)
         )
@@ -52,7 +61,10 @@ class UserData:
     
 
     @staticmethod
-    async def create_user(user_data, db:AsyncSession):
+    async def create_user(
+        user_data, 
+        db:AsyncSession
+    ):
         db.add(user_data)
         await db.commit()
         await db.refresh(user_data)
@@ -61,7 +73,10 @@ class UserData:
     
     
     @staticmethod
-    async def delete_user(user_id, db:AsyncSession):
+    async def delete_user(
+        user_id: str, 
+        db:AsyncSession
+    ):
         result = await db.execute(
             select(User).where(
                 User.id == user_id
@@ -80,15 +95,18 @@ class UserData:
         await db.commit()
 
         return {
-            "message": f"User:({user_id}) deleted"
+            "message": f"User: {user_id} deleted"
         }
     
 
     @staticmethod
-    async def update_user(user_id:str, user_data, db:AsyncSession):
+    async def modify_user(
+        user_data: UserUpdate, 
+        db:AsyncSession
+    ):
         result = await db.execute(
             select(User).where(
-                User.id == user_id
+                User.id == user_data.id
             )
         )
         user = result.scalar_one_or_none()
@@ -106,17 +124,23 @@ class UserData:
 
         for key, value in update_data.items():
             setattr(user, key, value)
-        user.updatedAt = time_now
+        user.updated_at = time_now()
 
         db.add(user_data)
         await db.commit()
         await db.refresh(user_data)
 
-        return user_data
+        return {
+            "message": "User updated",
+            "body": user_data
+        }
     
     
     @staticmethod
-    async def deactivate_user(user_id:str, db:AsyncSession):
+    async def deactivate_user(
+        user_id:str, 
+        db:AsyncSession
+    ):
         result = await db.execute(
             select(User).where(
                 User.id == user_id
@@ -132,7 +156,7 @@ class UserData:
             )
 
         user.active = False
-        user.deactivatedAt = time_now
+        user.deactivated_at = time_now()
 
         await db.commit()
         await db.refresh(user)

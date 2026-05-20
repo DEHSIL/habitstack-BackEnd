@@ -13,13 +13,13 @@ router = APIRouter(
     tags=["Admin: Users"]
 )
 
-@router.delete("/{user_id}", response_model=UserOut)
-@router.delete("/{user_id}/", response_model=UserOut)
+@router.delete("/{user_id}/delete")
+@router.delete("/{user_id}/delete/")
 async def admin_delete_user(
     user_id: str, 
     db: AsyncSession = Depends(get_db),
-    current_admin = Depends(get_current_admin_user)
-):
+    # current_admin = Depends(get_current_admin_user)
+) -> UserOut:
     try:
         return await UserService.delete_user(user_id, db)
     except Missing as ecx:
@@ -31,8 +31,8 @@ async def admin_delete_user(
 async def admin_deactivate_user(
     user_id: str, 
     db: AsyncSession = Depends(get_db),
-    current_admin = Depends(get_current_admin_user)
-):
+    # current_admin = Depends(get_current_admin_user)
+) -> UserOut:
     try:
         return await UserService.deactivate_user(user_id, db)
     except Missing as ecx:

@@ -72,13 +72,13 @@ class User(Base):
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=time_now,
-        onupdate=time_now
+        default=time_now(),
+        onupdate=time_now()
     )
 
     create_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=time_now
+        default=time_now()
         )
     
     deactivated_at: Mapped[datetime | None] = mapped_column(

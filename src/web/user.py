@@ -16,12 +16,19 @@ router = APIRouter(
 
 @router.get('', response_model=list[UserOut])
 @router.get('/', response_model=list[UserOut])
-async def get_all(db: AsyncSession = Depends(get_db)) -> list[UserOut]:
+# перенести в админа, сделать пагинацию, поиск по полям
+async def get_all(
+    db: AsyncSession = Depends(get_db)
+) -> list[UserOut]:
     return await UserService.get_all(db)
 
 
 @router.get('/{id}', response_model=UserOut)
-async def get_one(id: str, db: AsyncSession = Depends(get_db)) -> UserOut:
+# Убрать в админа
+async def get_one(
+    id: str, 
+    db: AsyncSession = Depends(get_db)
+) -> UserOut:
     try:
         return await UserService.get_one(id, db)
     except Missing as exc:
@@ -43,10 +50,14 @@ async def create_user(
     
 
 #Проверять есть ли айдишник внутри
-@router.patch('', response_model=UserOut)
-@router.patch('/', response_model=UserOut)
-async def modify_user(data: UserUpdate, db: AsyncSession = Depends(get_db)) -> UserOut:
+@router.patch('')
+@router.patch('/')
+async def modify_user(
+    payload: UserCreate = Depends(get_user_payload), # Вот тут происходит магия
+    avatar: Optional[UploadFile] = File(None), 
+    db: AsyncSession = Depends(get_db)
+) -> UserOut:
     try:
-        return await UserService.modify_user(data, db)
+        return await UserService.modify_user(payload, avatar, db)
     except Missing as exc:
         raise HTTPException(status_code=404, detail=exc.msg)

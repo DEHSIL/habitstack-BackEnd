@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
 
@@ -49,7 +49,7 @@ class UserUpdate(BaseModel):
     active: Optional[bool] = None
 
 
-class UserOut(BaseModel):
+class UserOutBody(BaseModel):
     id: str
 
     name: str
@@ -74,6 +74,12 @@ class UserOut(BaseModel):
     deactivated_at: Optional[datetime]
 
     lastsync_at: Optional[datetime]
-
+    
     class Config:
         from_attributes = True
+
+class UserOut(BaseModel):
+    message: Optional[str]
+    body: Optional[UserOutBody]
+   
+    

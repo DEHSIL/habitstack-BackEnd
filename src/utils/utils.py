@@ -15,8 +15,10 @@ def hash_password(password: str):
 def verify_password(password: str, hashed: str):
     return pwd_context.verify(password, hashed)
 
-time_now = lambda: datetime.now()
+# time_now() = (lambda: datetime.now())()
 
+def time_now():
+    return datetime.now()
 
 async def get_user_payload(
     name: str = Form(...),

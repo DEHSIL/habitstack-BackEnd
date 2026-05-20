@@ -43,7 +43,8 @@ def verify_token(access_token: Annotated[str | None, Cookie()] = None) -> dict:
 
 # 3. Зависимость для обычного пользователя (возвращает username)
 def get_current_user(payload: dict = Depends(verify_token)) -> str:
-    return payload.get("sub")
+    # возвращать данные пользователя
+    return payload
 
 # 4. ЗАВИСИМОСТЬ ДЛЯ АДМИНА (Проверяет роль внутри JWT)
 def get_current_admin_user(payload: dict = Depends(verify_token)) -> str:
