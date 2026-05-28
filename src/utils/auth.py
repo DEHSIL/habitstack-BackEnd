@@ -3,7 +3,10 @@ from typing import Annotated
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Cookie
+from src.data.user import UserData
 from settings import settings  # Добавили src. для абсолютного импорта
+from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils.db import get_db
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -41,20 +44,27 @@ def verify_token(access_token: Annotated[str | None, Cookie()] = None) -> dict:
     except JWTError:
         raise credentials_exception
 
+
 # 3. Зависимость для обычного пользователя (возвращает username)
-def get_current_user(payload: dict = Depends(verify_token)) -> str:
-    # возвращать данные пользователя
-    return payload
+async def get_current_user(
+    db: AsyncSession = Depends(get_db),
+    payload: dict = Depends(verify_token),   
+) -> str:
+    user = await UserData.get_user_by_id(payload.get("id"), db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+    return user
+
 
 # 4. ЗАВИСИМОСТЬ ДЛЯ АДМИНА (Проверяет роль внутри JWT)
-def get_current_admin_user(payload: dict = Depends(verify_token)) -> str:
-    user_role = payload.get("role")
-    
-    # Строгая проверка роли. Если не "admin" -> 403 Forbidden
-    if user_role != "admin":
+async def get_current_admin(
+    db: AsyncSession = Depends(get_db),
+    payload: dict = Depends(verify_token)
+) -> str:
+    user = await UserData.get_user_by_id(payload.get("id"), db)
+    if not user or user.role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN, 
             detail="Доступ запрещен. Требуются права администратора"
         )
-        
-    return payload.get("sub")
+    return user

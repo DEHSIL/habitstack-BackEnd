@@ -7,7 +7,7 @@ from src.utils.utils import time_now
 
 class UserData:
     @staticmethod
-    async def get_one_by_id(
+    async def get_by_id(
         user_id: str, 
         db: AsyncSession
     ):
@@ -22,7 +22,7 @@ class UserData:
                 status_code=404,
                 detail="User not found"
             )
-        return user
+        return {"body": user}
     
 
     @staticmethod
@@ -45,6 +45,20 @@ class UserData:
     
 
     @staticmethod
+    async def get_by_email(
+        email: str, 
+        db: AsyncSession
+    ):
+        result = await db.execute(
+            select(User).where(
+                User.email == email
+            )
+        )
+        users = result.scalars().all()
+        return users
+    
+
+    @staticmethod
     async def get_all(
         db: AsyncSession
     ):
@@ -52,24 +66,23 @@ class UserData:
             select(User)
         )
         users = result.scalars().all()
-        if not users:
-            raise HTTPException(
-                status_code=404,
-                detail="No users"
-            )
+        
         return users
     
 
     @staticmethod
     async def create_user(
-        user_data, 
+        user_data: UserCreate, 
         db:AsyncSession
     ):
         db.add(user_data)
         await db.commit()
         await db.refresh(user_data)
 
-        return user_data
+        return {
+            "message": f"User {user_data.name} creater",
+            "body": user_data
+        }
     
     
     @staticmethod
@@ -161,4 +174,6 @@ class UserData:
         await db.commit()
         await db.refresh(user)
 
-        return user
+        return {
+            "message": f"User: {user_id} deactivated"
+        }

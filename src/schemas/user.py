@@ -1,6 +1,8 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, EmailStr
 from typing import Optional, Literal
 from datetime import datetime
+from typing import Generic, TypeVar, List
+
 
 class UserCreate(BaseModel):
     name: str
@@ -78,8 +80,23 @@ class UserOutBody(BaseModel):
     class Config:
         from_attributes = True
 
+
 class UserOut(BaseModel):
-    message: Optional[str]
-    body: Optional[UserOutBody]
-   
-    
+    message: Optional[str] = None
+
+    body: Optional[UserOutBody] = None
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+T = TypeVar('T')
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]      # Список элементов (в твоем случае пользователей)
+    total: int          # Общее количество записей в БД
+    page: int           # Текущая страница
+    size: int           # Количество элементов на странице
+    pages: int          # Всего страниц (total // size + 1)

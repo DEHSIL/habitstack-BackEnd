@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.R2 import storage
 from src.utils.db import engine, Base, get_db
-
+from fastapi.middleware.cors import CORSMiddleware
 from src.model.user import User
 
 from src.schemas.user import (
@@ -17,7 +17,7 @@ from src.schemas.user import (
     UserOut
 )
  
-from src.web import user, admin_user
+from src.web import user, admin_user, auth
 from src.utils.utils import hash_password
 from src.utils.error import Missing
 
@@ -31,74 +31,26 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    response_model_exclude_none=True
+)
+origins = [
+    "http://localhost:3000",  # Твой фронтенд на Next.js
+    "http://127.0.0.1:3000",  # На всякий случай локальный IP
+]
 
+# Добавляем CORSMiddleware в приложение
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # Разрешаем запросы с этих адресов
+    allow_credentials=True,           # Разрешаем передачу кук и заголовков авторизации
+    allow_methods=["*"],              # Разрешаем все методы (GET, POST, PUT, DELETE и т.д.)
+    allow_headers=["*"],              # Разрешаем любые HTTP-заголовки
+)
 app.include_router(user.router)
 app.include_router(admin_user.router)
-
-
-
-
-# CREATE USER
-# @app.post(
-#     "/users",
-#     response_model=UserOut
-# )
-# async def create_user(
-#     name: str = Form(...),
-#     surname: str = Form(...),
-#     password: str = Form(...),
-#     color: str = Form(...),
-#     email: Optional[str] = Form(None),
-#     avatar: UploadFile = File(None), # Для получения файла
-#     db: AsyncSession = Depends(get_db)
-# ):
-#     avatar_url = None
-
-#     if avatar:
-#         # Формируем уникальный путь: avatars/timestamp_filename
-#         from datetime import datetime
-#         file_path = f"avatars/{datetime.now().timestamp()}_{avatar.filename}"
-        
-#         # Загружаем в Cloudflare R2
-#         avatar_url = await storage.upload_file(avatar, file_path)
-
-#     # Теперь создаем пользователя в БД
-
-#     # print(data)
-#     user = User(
-#         name=name,
-#         surname=surname,
-
-#         password_hash=hash_password(password),
-
-#         avatar_url=avatar_url,
-#         email=email,
-
-#         color=color,
-#     )
-    
-#     db.add(user)
-#     await db.commit()
-#     await db.refresh(user)
-
-#     return user
-
-
-# GET ALL USERS
-# @app.get(
-#     "/users",
-#     response_model=list[UserOut]
-# )
-# async def get_users(
-#     db: AsyncSession = Depends(get_db)
-# ):
-#     result = await db.execute(
-#         select(User)
-#     )
-
-#     return result.scalars().all()
-
+app.include_router(auth.router)
 
 # GET USER BY ID
 @app.get(
