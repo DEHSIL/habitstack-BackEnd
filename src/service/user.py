@@ -17,11 +17,13 @@ class UserService:
         db: AsyncSession
     ) -> list[UserOut]:
         res = await UserData.get_all(db)
+
         if not res:
             raise HTTPException(
-                status_code=404,
+                status_code=404, 
                 detail="No users"
             )
+        
         return res
         
     @staticmethod
@@ -56,12 +58,52 @@ class UserService:
             "pages": pages
         }
 
+
     @staticmethod
     async def get_by_id(
         user_id: str, 
         db: AsyncSession
     ) -> UserOut:
-        return await UserData.get_by_id(user_id, db)
+        user =  await UserData.get_by_id(user_id, db)
+        
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+        return {"body": user}
+        
+
+    @staticmethod
+    async def get_by_name(
+        name: str, 
+        db: AsyncSession
+    ) -> UserOut:
+        user =  await UserData.get_by_name(name, db)
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+        
+        return {"body": user}
+    
+
+    @staticmethod
+    async def get_by_email(
+        email: str, 
+        db: AsyncSession
+    ) -> UserOut:
+        user =  await UserData.get_by_email(email, db)
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+        
+        return {"body": user}
         
 
     @staticmethod
@@ -143,7 +185,10 @@ class UserService:
         )
         new_user = await UserData.create_user(user, db)
 
-        return new_user
+        return {
+            "message": f"User {new_user.name} creater",
+            "body": new_user
+        }
         
     
     # сделать отдельное обновление аватарки и все хдругих данных
@@ -197,6 +242,9 @@ class UserService:
     ) -> UserOut:
         return await UserData.deactivate_user(user_id, db)
     
+
+
+
 
     @staticmethod
     async def get_user_payload(

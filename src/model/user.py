@@ -47,6 +47,11 @@ class User(Base):
         default=0
     )
 
+    max_streak: Mapped[int] = mapped_column(
+        Integer,
+        default=0
+    )
+
     points: Mapped[int] = mapped_column(
         Integer,
         default=0

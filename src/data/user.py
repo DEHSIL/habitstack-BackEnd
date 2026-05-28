@@ -16,13 +16,10 @@ class UserData:
                 User.id == user_id
             )
         )
+
         user = result.scalar_one_or_none()
-        if not user:
-            raise HTTPException(
-                status_code=404,
-                detail="User not found"
-            )
-        return {"body": user}
+
+        return user
     
 
     @staticmethod
@@ -35,12 +32,9 @@ class UserData:
                 User.name == name
             )
         )
+
         users = result.scalars().all()
-        if not users:
-            raise HTTPException(
-                status_code=404,
-                detail="Users not found"
-            )
+
         return users
     
 
@@ -54,7 +48,9 @@ class UserData:
                 User.email == email
             )
         )
+
         users = result.scalars().all()
+
         return users
     
 
@@ -65,8 +61,9 @@ class UserData:
         result = await db.execute(
             select(User)
         )
+
         users = result.scalars().all()
-        
+
         return users
     
 
@@ -130,7 +127,6 @@ class UserData:
                 detail="User not found"
             )
         
-
         update_data = user_data.model_dump(
             exclude_unset=True
         )
