@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.R2 import storage
 from src.utils.db import engine, Base, get_db
 from fastapi.middleware.cors import CORSMiddleware
-from src.model.user import User
+from src.model.model import User
 
 from src.schemas.user import (
     UserCreate,
