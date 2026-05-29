@@ -1,8 +1,6 @@
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
 from passlib.context import CryptContext
-from fastapi import Form
-from api.schemas import UserCreate
+
 
 pwd_context = CryptContext(
     schemes=["argon2"],

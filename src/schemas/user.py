@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
     password: str
 
     avatar_url: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: EmailStr = None
 
     status: Literal['free', 'premium'] = 'free'
 
@@ -19,6 +19,27 @@ class UserCreate(BaseModel):
     theme: Literal['light', 'dark', 'system'] = 'system'
 
     streak: int = 0
+    max_streak: int = 0 
+    points: int = 0
+
+    color: str
+
+class UserAdminCreate(BaseModel):
+    name: str
+    surname: str
+    password: str
+
+    avatar_url: Optional[str] = None
+    email: EmailStr = None
+
+    status: Literal['free', 'premium'] = 'free'
+
+    role: Literal['user', 'admin'] = 'user'
+
+    theme: Literal['light', 'dark', 'system'] = 'system'
+
+    streak: int = 0
+    max_streak: int = 0 
     points: int = 0
 
     color: str
@@ -44,6 +65,7 @@ class UserUpdate(BaseModel):
     ] = None
 
     streak: Optional[int] = None
+    max_streak: Optional[int] = None
     points: Optional[int] = None
 
     color: Optional[str] = None
@@ -58,13 +80,14 @@ class UserOutBody(BaseModel):
     surname: str
 
     avatar_url: Optional[str]
-    email: Optional[str]
+    email: str
 
     status: str
     role: str
     theme: str
 
     streak: int
+    max_streak: int
     points: int
 
     color: str
@@ -91,12 +114,18 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-
+    # Объявляем переменную типа для создания универсальной пагинации
 T = TypeVar('T')
 
+class ApiMeta(BaseModel):
+    total_items: int
+    total_pages: int
+    current_page: int
+    per_page: int
+    has_next: bool
+    has_prev: bool
+
+# Универсальная схема ответа, которая примет список элементов и мету
 class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]      # Список элементов (в твоем случае пользователей)
-    total: int          # Общее количество записей в БД
-    page: int           # Текущая страница
-    size: int           # Количество элементов на странице
-    pages: int          # Всего страниц (total // size + 1)
+    items: List[T]
+    meta: ApiMeta

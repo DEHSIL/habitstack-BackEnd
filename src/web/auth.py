@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.db import get_db
 from src.schemas.user import UserLogin, UserOut
 from src.data.user import UserData
-from src.model.user import User
+from src.model.db_model import User
 from src.utils.utils import verify_password, hash_password
 from src.utils.auth import create_access_token, get_current_admin, get_current_user
 from src.utils.R2 import storage

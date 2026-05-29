@@ -1,15 +1,15 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 from fastapi import Form, HTTPException, Response, UploadFile
-from sqlalchemy import func, select
 import settings
-from src.model.user import User
+from src.model.db_model import User
 from src.utils.utils import hash_password, verify_password
-from src.schemas.user import UserCreate, UserLogin, UserOut, UserUpdate
+from src.schemas.user import UserAdminCreate, UserCreate, UserLogin, UserOut, UserUpdate
 from src.data.user import UserData
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.utils.R2 import storage
 from src.utils.auth import create_access_token
-
+import math
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class UserService:
     @staticmethod
@@ -26,38 +26,47 @@ class UserService:
         
         return res
         
+
     @staticmethod
-    async def get_pag(
+    async def get_users_paginated(
         db: AsyncSession,
         page: int,
-        size:int
-    ) -> list[UserOut]:
-        # 1. Считаем общее количество пользователей
-        count_query = select(func.count()).select_from(User) # Замени User на твою модель
-        total_result = await db.execute(count_query)
-        total = total_result.scalar() or 0
-
-        # 2. Получаем пользователей для текущей страницы
+        size: int,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
         offset = (page - 1) * size
-        query = select(User).offset(offset).limit(size)
         
-        # Если нужен поиск или сортировка, они добавляются сюда:
-        # query = query.where(User.username.ilike(f"%{search}%"))
+        if search and search.strip():
+            users, total_items = await UserData.get_paginated_search_raw(
+                db=db, offset=offset, limit=size, search=search
+            )
+        else:
+            users, total_items = await UserData.get_paginated_raw(
+                db=db, offset=offset, limit=size
+            )
 
-        result = await db.execute(query)
-        users = result.scalars().all()
-
-        # Расчет общего количества страниц
-        pages = (total + size - 1) // size 
+        if not users:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+        
+        total_pages = math.ceil(total_items / size) if total_items > 0 else 1
+        has_next = page < total_pages
+        has_prev = page > 1
 
         return {
             "items": users,
-            "total": total,
-            "page": page,
-            "size": size,
-            "pages": pages
+            "meta": {
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "current_page": page,
+                "per_page": size,
+                "has_next": has_next,
+                "has_prev": has_prev
+            }
         }
-
+    
 
     @staticmethod
     async def get_by_id(
@@ -162,16 +171,12 @@ class UserService:
         avatar_url = None
 
         if avatar:
-            # Формируем уникальный путь: avatars/timestamp_filename
             from src.utils.utils import time_now
             file_path = f"avatars/{time_now().timestamp()}_{avatar.filename}"
             
-            # Загружаем в Cloudflare R2
             avatar_url = await storage.upload_file(avatar, file_path)
 
-        # Теперь создаем пользователя в БД
 
-        # print(data)
         user = User(
             name=payload.name,
             surname=payload.surname,
@@ -181,14 +186,19 @@ class UserService:
             avatar_url=avatar_url,
             email=payload.email,
 
+            status=payload.status,
+            role=payload.role,
+            theme=payload.theme,
+
+            streak=payload.streak,
+            max_streak=payload.max_streak,
+            points=payload.points, 
+            
             color=payload.color,
         )
         new_user = await UserData.create_user(user, db)
 
-        return {
-            "message": f"User {new_user.name} creater",
-            "body": new_user
-        }
+        return new_user
         
     
     # сделать отдельное обновление аватарки и все хдругих данных
@@ -230,8 +240,6 @@ class UserService:
         user_id: str,
         db: AsyncSession
     ) -> UserOut:
-        # Проверять кто сделал запрос на удаление, если юзер, то нужно
-        # проверить что его айдишник совпадает и айди запросом
         return await UserData.delete_user(user_id, db)
     
 
@@ -243,9 +251,6 @@ class UserService:
         return await UserData.deactivate_user(user_id, db)
     
 
-
-
-
     @staticmethod
     async def get_user_payload(
         name: str = Form(...),
@@ -254,11 +259,38 @@ class UserService:
         color: str = Form(...),
         email: Optional[str] = Form(None)
     ) -> UserCreate:
-        # FastAPI сам провалидирует поля, а мы просто упаковываем их в модель
         return UserCreate(
             name=name,
             surname=surname,
             password=password,
             color=color,
             email=email
+        ) 
+    
+    @staticmethod
+    async def get_admin_user_payload(
+        name: str = Form(...),
+        surname: str = Form(...),
+        password: str = Form(...),
+        color: str = Form(...),
+        email: Optional[str] = Form(None),
+        status: str = Form(...),
+        role: str = Form(...),
+        theme: str = Form(...),
+        streak: str = Form(...),
+        max_streak: str = Form(...),
+        points: str = Form(...),
+    ) -> UserAdminCreate:
+        return UserAdminCreate(
+            name=name,
+            surname=surname,
+            password=password,
+            color=color,
+            email=email,
+            status=status,
+            role=role,
+            theme=theme,
+            streak=streak,
+            max_streak=max_streak,
+            points=points,
         ) 

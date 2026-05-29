@@ -1,17 +1,18 @@
-from typing import Optional
+from src.schemas.user import PaginatedResponse, UserOut, UserOutBody, UserUpdate
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from src.model.user import User
-from src.utils.error import Missing, Duplicate
-from src.service.user import UserService
-from src.schemas.user import PaginatedResponse, UserOut, UserCreate, UserOutBody, UserUpdate
-from src.utils.auth import get_current_admin, get_current_user
-from src.utils.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils.auth import get_current_user
+from src.service.user import UserService
+from src.model.db_model import User
+from src.utils.error import Missing
+from src.utils.db import get_db
+from typing import Optional
 
 router = APIRouter(
     prefix='/user',
     tags=['User'],
 )
+
 
 @router.get('/pag', response_model=PaginatedResponse[UserOutBody])
 @router.get('/pag/', response_model=PaginatedResponse[UserOutBody])
@@ -21,10 +22,25 @@ async def get_pag(
     db: AsyncSession = Depends(get_db)
 ) -> list[UserOutBody]:
     try:
-        return await UserService.get_pag(db, page, size)
+        return await UserService.get_users_paginated(db, page, size)
     except Missing as exc:
-        raise HTTPException(status_code=404, datail=exc.msg)
+        raise HTTPException(status_code=404, detail=exc.msg)
     
+
+@router.get('/pagsearch', response_model=PaginatedResponse[UserOutBody])
+@router.get('/pagsearch/', response_model=PaginatedResponse[UserOutBody])
+async def get_pag(
+    search: Optional[str] = Query(None, description="Поиск по имени, фамилии, email или ID"),
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(10, ge=1, le=100, description="Элементов на странице"),
+    db: AsyncSession = Depends(get_db)
+) -> dict: # Исправили тип с list на PaginatedResponse
+    print(search)
+    try:
+        return await UserService.get_users_paginated(db, page, size, search)
+    except Missing as exc:
+        raise HTTPException(status_code=404, detail=exc.msg) # Исправили 'datail' на 'detail'
+
 
 @router.get('/getall', response_model=list[UserOutBody])
 @router.get('/getall/', response_model=list[UserOutBody])
@@ -37,18 +53,17 @@ async def get_all(
         raise HTTPException(status_code=404, datail=exc.msg)
 
 
-@router.get('/byid/{id}', response_model=UserOut, response_model_exclude_none=True)
-@router.get('/byid/{id}/', response_model=UserOut, response_model_exclude_none=True)
+@router.get('/byname/{name}', response_model=UserOut, response_model_exclude_none=True)
+@router.get('/byname/{name}/', response_model=UserOut, response_model_exclude_none=True)
 # Убрать в админа
-async def get_by_id(
-    id: str, 
+async def get_by_name(
+    name: str, 
     db: AsyncSession = Depends(get_db)
 ) -> UserOut:
     try:
-        return await UserService.get_by_id(id, db)
+        return await UserService.get_by_name(name, db)
     except Missing as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
-
 
 
 #Проверять есть ли айдишник внутри
