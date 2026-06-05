@@ -92,7 +92,8 @@ async def admin_get_by_email(
     except Missing as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
     
-
+    
+# Нужен ли он вообще???????????
 @router.get('/getall', response_model=list[UserOutBody])
 @router.get('/getall/', response_model=list[UserOutBody])
 async def admin_get_all(
