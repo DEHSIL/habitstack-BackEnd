@@ -49,9 +49,6 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     surname: Optional[str] = None
 
-    avatar_url: Optional[str] = None
-    email: Optional[EmailStr] = None
-
     status: Optional[
         Literal['free', 'premium']
     ] = None

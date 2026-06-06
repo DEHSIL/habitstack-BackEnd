@@ -56,13 +56,13 @@ async def admin_deactivate_user(
 
 @router.get('/byid/{id}', response_model=UserOut, response_model_exclude_none=True)
 @router.get('/byid/{id}/', response_model=UserOut, response_model_exclude_none=True)
-async def admin_get_by_id(
+async def admin_get_user_by_id(
     id: str,
     db: AsyncSession = Depends(get_db),
     current_admin = Depends(get_current_admin)
 ) -> UserOut:
     try:
-        return await UserService.get_by_id(id, db)
+        return await UserService.get_user_by_id(id, db)
     except Missing as exc:
         raise HTTPException(status_code=404, detail=exc.msg)
     

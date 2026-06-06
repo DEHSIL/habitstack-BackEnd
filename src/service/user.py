@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 from fastapi import Form, HTTPException, Response, UploadFile
-import settings
+from settings import settings
 from src.model.db_model import User
 from src.utils.utils import hash_password, verify_password
 from src.schemas.user import UserAdminCreate, UserCreate, UserLogin, UserOut, UserUpdate
@@ -10,6 +10,7 @@ from src.utils.R2 import storage
 from src.utils.auth import create_access_token
 import math
 from sqlalchemy.ext.asyncio import AsyncSession
+from src.utils.utils import time_now
 
 class UserService:
     @staticmethod
@@ -69,11 +70,11 @@ class UserService:
     
 
     @staticmethod
-    async def get_by_id(
+    async def get_user_by_id(
         user_id: str, 
         db: AsyncSession
     ) -> UserOut:
-        user =  await UserData.get_by_id(user_id, db)
+        user =  await UserData.get_user_by_id(user_id, db)
         
         if not user:
             raise HTTPException(
@@ -128,25 +129,23 @@ class UserService:
                 detail="Неверный email или пароль"
             )
 
-        # Зашиваем в токен sub (email), id и роль из базы данных
         token_payload = {
             "sub": user.email,
             "id": str(user.id),
             "role": user.role
         }
-        
         token = create_access_token(data=token_payload)
+        
 
-        # Записываем JWT в HttpOnly куку
         response.set_cookie(
             key="access_token",
             value=token,
             httponly=True,
-            secure=True,  # Включите в продакшене (HTTPS)
+            secure=True, 
             samesite="lax",
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
-
+        print(user)
         return {
             "message": "Успешный вход", 
             "role": user.role,
@@ -171,7 +170,7 @@ class UserService:
         avatar_url = None
 
         if avatar:
-            from src.utils.utils import time_now
+            
             file_path = f"avatars/{time_now().timestamp()}_{avatar.filename}"
             
             avatar_url = await storage.upload_file(avatar, file_path)
@@ -204,35 +203,36 @@ class UserService:
     # сделать отдельное обновление аватарки и все хдругих данных
     @staticmethod
     async def modify_user(
-        payload: UserUpdate, 
-        avatar: UploadFile,
-        db: AsyncSession
-    ) -> UserOut:
-        
+        user_data: UserUpdate, 
+        avatar: Optional[UploadFile],
+        db: AsyncSession,
+        current_user: User
+    ):
         avatar_url = None
 
+        # 1. Если прилетел файл — изолированно грузим его в Cloudflare R2
         if avatar:
-            # Формируем уникальный путь: avatars/timestamp_filename
             from src.utils.utils import time_now
             file_path = f"avatars/{time_now().timestamp()}_{avatar.filename}"
-            
-            # Загружаем в Cloudflare R2
             avatar_url = await storage.upload_file(avatar, file_path)
 
-        # Теперь создаем пользователя в БД
-
-        # print(data)
-        data = User(
-            name=payload.name,
-            surname=payload.surname,
-
-            avatar_url=avatar_url,
-            email=payload.email,
-
-            color=payload.color,
+        # 2. Вызываем метод низкого уровня базы данных для обновления полей
+        updated_user = await UserData.modify_user(
+            user_id=current_user.id,
+            user_data=user_data,
+            db=db,
+            avatar_url=avatar_url
         )
 
-        return await UserData.modify_user(data, db)
+        # 3. Если на уровне БД что-то пошло не так (юзера удалили в параллельном потоке)
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        # 4. ИСПРАВЛЕНО: Возвращаем сам объект пользователя.
+        # FastAPI автоматически пропустит его через вашу response_model=UserOut
+        print(f"Пользователь {updated_user} успешно обновлен")
+
+        return {"body":updated_user}
     
 
     @staticmethod
@@ -251,6 +251,19 @@ class UserService:
         return await UserData.deactivate_user(user_id, db)
     
 
+
+    @staticmethod
+    async def get_user_modify_payload(
+        name: Optional[str] = Form(None),
+        surname: Optional[str] = Form(None),
+        color: Optional[str] = Form(None)
+    ) -> UserUpdate:
+        return UserUpdate(
+            name=name,
+            surname=surname,
+            color=color
+        )
+    
     @staticmethod
     async def get_user_payload(
         name: str = Form(...),

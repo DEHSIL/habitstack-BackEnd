@@ -1,17 +1,11 @@
 from typing import Optional
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Response, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.utils.db import get_db
 from src.schemas.user import UserLogin, UserOut
-from src.data.user import UserData
 from src.model.db_model import User
-from src.utils.utils import verify_password, hash_password
-from src.utils.auth import create_access_token, get_current_admin, get_current_user
-from src.utils.R2 import storage
+from src.utils.auth import get_current_admin, get_current_user
 from src.service.user import UserService
-from settings import settings
 from src.utils.error import Duplicate
 
 router = APIRouter(
@@ -46,7 +40,7 @@ async def login(
     except:
         raise HTTPException(
             status_code=401,
-            detail=""
+            detail="Ошибка ****ь"
         )
     
 

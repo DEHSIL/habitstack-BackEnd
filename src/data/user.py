@@ -1,6 +1,5 @@
-from typing import List
+from typing import List, Optional
 import uuid
-
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, or_, select
@@ -66,7 +65,7 @@ class UserData:
         return users, total_items
 
     @staticmethod
-    async def get_by_id(
+    async def get_user_by_id(
         user_id: str, 
         db: AsyncSession
     ):
@@ -108,7 +107,7 @@ class UserData:
             )
         )
 
-        users = result.scalars().all()
+        users = result.scalars().one_or_none()
 
         return users
     
@@ -170,39 +169,41 @@ class UserData:
 
     @staticmethod
     async def modify_user(
+        user_id: int,  # Передаем id вместо всего объекта сессии, так чище для DAL
         user_data: UserUpdate, 
-        db:AsyncSession
-    ):
+        db: AsyncSession,
+        avatar_url: Optional[str] = None # Принимаем уже готовую строку-ссылку из сервиса
+    ) -> User:
+        # 1. Ищем пользователя в БД
         result = await db.execute(
-            select(User).where(
-                User.id == user_data.id
-            )
+            select(User).where(User.id == user_id)
         )
-        user = result.scalar_one_or_none()
+        db_user = result.scalar_one_or_none()
 
-        if not user:
-            raise HTTPException(
-                status_code=404,
-                detail="User not found"
-            )
-        
-        update_data = user_data.model_dump(
-            exclude_unset=True
-        )
+        if not db_user:
+            return None # На уровне БД лучше возвращать None, а HTTPException вызывать в сервисе
 
+        # 2. Превращаем Pydantic-схему в словарь (только измененные поля)
+        update_data = user_data.model_dump(exclude_unset=True)
+
+        # 3. Динамически обновляем текстовые поля модели
         for key, value in update_data.items():
-            setattr(user, key, value)
-        user.updated_at = time_now()
+            setattr(db_user, key, value)
 
-        db.add(user_data)
+        # 4. Если в сервис загрузили аватар, обновляем ссылку в модели БД
+        if avatar_url:
+            db_user.avatar_url = avatar_url
+
+        # Обновляем дату модификации
+        db_user.updated_at = time_now()
+
+        # 5. ИСПРАВЛЕНО: Сохраняем именно модель SQLAlchemy (db_user)
+        db.add(db_user)
         await db.commit()
-        await db.refresh(user_data)
+        await db.refresh(db_user)
 
-        return {
-            "message": "User updated",
-            "body": user_data
-        }
-    
+        return db_user
+        
     
     @staticmethod
     async def deactivate_user(
